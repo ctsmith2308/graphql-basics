@@ -187,6 +187,7 @@ const resolvers = {
       return user;
     },
     createPost(parent, args, ctx, info) {
+      console.log(...args);
       const userExists = users.some((user) => user.id === args.author)
       if (!userExists) {
         throw new Error("User does not exist")
