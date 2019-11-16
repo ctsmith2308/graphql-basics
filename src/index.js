@@ -1,4 +1,5 @@
 import { GraphQLServer } from "graphql-yoga";
+import uuidv4 from 'uuid/v4';
 
 // Scalar types for GraphQL - String, Boolean, Int, Float, ID
 // Demo user data
@@ -6,17 +7,20 @@ const users = [
   {
     id: "1",
     name: "Chris",
-    email: "some@yahoo.com"
+    email: "some@yahoo.com",
+    age: 32
   },
   {
     id: "2",
     name: "Sara",
-    email: "some@yahoo.com"
+    email: "some@yahoo.com",
+    age: 32
   },
   {
     id: "3",
     name: "Rachel",
-    email: "some@yahoo.com"
+    email: "some@yahoo.com",
+    age: 32
   }
 ];
 
@@ -36,7 +40,6 @@ const posts = [
     published: false,
     author: '1',
     comments: [13]
-
   },
   {
     id: "3",
@@ -78,11 +81,17 @@ const typeDefs = `
     comments(query: String): [Comment!]!
   }
 
+  type Mutation { 
+    createUser(name: String!, email: String!, age: Int): User!
+    createPost(title: String!, body: String!, published: Boolean!, author: ID!): Post!
+    createComment(text: String!, post: ID!, author: ID!): Comment!
+  }
+
   type User {
     id: ID!
     name: String!
     email: String!
-    age: Int
+    age: ID
     posts: [Post!]!
     comments: [Comment!]!
   }
@@ -129,8 +138,66 @@ const resolvers = {
       }
     },
     comments(parent, args, ctx, info) {
-      return comments
+      if (!args.query) {
+        return comments
+      } else {
+        return comments.filter(comment =>
+          comment.text.toLowerCase().indexOf(args.query.toLowerCase()) !== -1 ||
+          comment.id === args.query)
+      }
     }
+  },
+  Mutation: {
+    createUser(parent, args, ctx, info) {
+      const emailTaken = users.some((user) => user.email === args.email)
+      if (emailTaken) {
+        throw new Error("Email taken")
+      }
+      const user = {
+        id: uuidv4(),
+        name: args.name,
+        email: args.email
+      }
+      users.push(user);
+
+      return user;
+    },
+    createPost(parent, args, ctx, info) {
+      const userExists = users.some((user) => user.id === args.author)
+      if (!userExists) {
+        throw new Error("User does not exist")
+      }
+      const post = {
+        id: uuidv4(),
+        title: args.title,
+        body: args.body,
+        author: args.author,
+        published: args.published
+      }
+      posts.push(post);
+      return post
+    },
+    createComment(parent, args, ctx, info) {
+      const postExists = posts.some(post => post.id === args.post && post.published);
+      if (!postExists) {
+        throw new Error("Post does not exist")
+      }
+
+      const userExists = users.some(user => user.id === args.author);
+      if (!userExists) {
+        throw new Error("User does not exist");
+      }
+
+      let comment = {
+        id: uuidv4(),
+        text: args.text,
+        author: args.author,
+        post: args.post
+      }
+      comments.push(comment);
+
+      return comment;
+    },
   },
   Post: {
     author(parent, args, ctx, info) {
