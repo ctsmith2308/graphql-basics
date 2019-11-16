@@ -1,8 +1,8 @@
 import { GraphQLServer } from "graphql-yoga";
-import uuidv4 from 'uuid/v4';
+import uuidv4 from 'uuid/v4'; // npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
+// Used to generate random id for posts, comment, and id's in this example.  
 
-// Scalar types for GraphQL - String, Boolean, Int, Float, ID
-// Demo user data
+// DEMO DATA
 const users = [
   {
     id: "1",
@@ -71,9 +71,27 @@ const comments = [
     post: '2'
   }
 ];
+// Scalar types for GraphQL - String, Boolean, Int, Float, ID
+// These are used to define the types of each value within your data structures.
+// "!" means a non-nullable type (this can be optional). For a return type you have specified within a Query or Mutation method it must have the key and their specified types!!!
+// Ex:
+// type User {
+//   id: ID! <-- type of id
+//   name: String! <-- type of name
+//   email: String! <-- type of email
+//   age: ID <-- type of age, and so forth
+//   posts: [Post!]!
+//   comments: [Comment!]!
+// }
 
+// QUERIES (Query) emulate 'get' requests and have optional query parameters that are passed to resolver methods (see below in Resolvers) to execute desired functionality.
+// These 'get' requests are methods that can take on a parameter or not Ex: users(query: String!): [User!]! or query: [User!]! (see below for reference)
+// The return type is specied after the ':' This is a non-nullable return type meaning the methods you DEFINE must return a type
+// defined below - User, Post, Comment.
 
-// Type definitions (schema)
+// MUTATIONS (Mutation) emulate 'put', 'post', 'delete' requests. They are similar to Queries, but they need paramters passed in (not optional).
+
+// TYPE DEFINITIONS (schema)
 const typeDefs = `
   type Query {
     users(query: String): [User!]!
@@ -113,13 +131,18 @@ const typeDefs = `
   }
 `;
 
-// Resolvers
+// RESOLVERS
+// You must define a corresponding resolver method for each Query or Mutation method you create. 
 const resolvers = {
   Query: {
+    // args are the parameters you pass in to the defined methods within a Mutation or Query.
+    // More to come for ctx and info
     posts(parent, args, ctx, info) {
+      // The args here must be type String and since it is optional shit wont break. The string can be anything.
       if (!args.query) {
         return posts;
       } else {
+        // Since the return type of posts must be an array of posts (ie [Posts!]! - again, not nullable) we are returning the array of posts.
         return posts.filter(
           post =>
             post.title.toLowerCase().indexOf(args.query.toLowerCase()) !== -1 ||
@@ -148,6 +171,7 @@ const resolvers = {
     }
   },
   Mutation: {
+    // The args here must have an email and name to be valid. They have a specified type defined above within the function parameters (line 102)
     createUser(parent, args, ctx, info) {
       const emailTaken = users.some((user) => user.email === args.email)
       if (emailTaken) {
@@ -199,7 +223,11 @@ const resolvers = {
       return comment;
     },
   },
-  Post: {
+  Post: { // In order to access the authors or comments from a query WITHIN a post query, resolver functions for each TYPE (author and comment) are needed below:
+    // Note: Parent, from what I'm loosely assuming is equal to a single Post, specifically the Post within Posts above.
+    // How this works is for each Post in the Posts array, the Parent (a singular Post) is passed into the author/comments resolvers 
+    // below which allows the author/comments resolver functions to access the values of each Post (the parent). 
+    // It is a built in GraphQL loop that queries each Post ie Parent against the find function within the resolver below
     author(parent, args, ctx, info) {
       return users.find((user) => user.id === parent.author)
     },
@@ -207,7 +235,11 @@ const resolvers = {
       return comments.filter(comment => comment.post === parent.id)
     }
   },
-  User: {
+  User: { // In order to access the comments or posts from a query WITHIN a user query, resolver functions for each TYPE (comments and post) are needed below:
+    // Note: Parent, from what I'm loosely assuming is equal to a single User, specifically the User within Users above.
+    // How this works is for each User in the Users array, the Parent (a singular User) is passed into the posts/comments resolvers 
+    // below, which allows the posts/comments resolver functions to access the values of each User (the parent). 
+    // It is a built in GraphQL loop that queries each User ie Parent against the find function within the resolver below
     posts(parent, args, ctx, info) {
       return posts.filter(post => post.author === parent.id)
     },
@@ -215,7 +247,11 @@ const resolvers = {
       return comments.filter(comment => comment.author === parent.id)
     }
   },
-  Comment: {
+  Comment: { // In order to access the authors or posts from a query WITHIN a comment query, resolver functions for each TYPE (author and post) are needed below:
+    // Note: Parent, from what I'm loosely assuming is equal to a single Comment, specifically the Comment within Comments above.
+    // How this works is for each comment in the comments array, the Parent (a singular Comment) is passed into the author/posts resolvers 
+    // below, which allows the author/posts resolver functions to access the values of each Comment (the parent). 
+    // It is a built in GraphQL loop that queries each Comment ie Parent against the find function within the resolver below
     author(parent, args, ctx, info) {
       return users.find((user) => user.id === parent.author)
     },
@@ -224,7 +260,7 @@ const resolvers = {
     }
   }
 };
-
+// intialize new GraphQLServer and pass in typeDefs and resolvers defined above.
 const server = new GraphQLServer({
   typeDefs,
   resolvers
