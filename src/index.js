@@ -179,25 +179,20 @@ const resolvers = {
       }
       const user = {
         id: uuidv4(),
-        name: args.name,
-        email: args.email
+        ...args
       }
       users.push(user);
 
       return user;
     },
     createPost(parent, args, ctx, info) {
-      console.log(...args);
       const userExists = users.some((user) => user.id === args.author)
       if (!userExists) {
         throw new Error("User does not exist")
       }
       const post = {
         id: uuidv4(),
-        title: args.title,
-        body: args.body,
-        author: args.author,
-        published: args.published
+        ...args
       }
       posts.push(post);
       return post
@@ -215,9 +210,7 @@ const resolvers = {
 
       let comment = {
         id: uuidv4(),
-        text: args.text,
-        author: args.author,
-        post: args.post
+        ...args
       }
       comments.push(comment);
 
