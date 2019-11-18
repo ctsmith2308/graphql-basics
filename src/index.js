@@ -7,18 +7,7 @@ import db from "./db";
 // RESOLVERS
 // You must define a corresponding resolver method for each Query or Mutation method you create. 
 const resolvers = {
-  Post: { // In order to access the authors or comments from a query WITHIN a post query, resolver functions for each TYPE (author and comment) are needed below:
-    // Note: Parent, from what I'm loosely assuming is equal to a single Post, specifically the Post within Posts above.
-    // How this works is for each Post in the Posts array, the Parent (a singular Post) is passed into the author/comments resolvers 
-    // below which allows the author/comments resolver functions to access the values of each Post (the parent). 
-    // It is a built in GraphQL loop that queries each Post ie Parent against the find function within the resolver below
-    author(parent, args, { db }, info) {
-      return db.users.find((user) => user.id === parent.author)
-    },
-    comments(parent, args, { db }, info) {
-      return db.comments.filter(comment => comment.post === parent.id)
-    }
-  },
+  
   User: { // In order to access the comments or posts from a query WITHIN a user query, resolver functions for each TYPE (comments and post) are needed below:
     // Note: Parent, from what I'm loosely assuming is equal to a single User, specifically the User within Users above.
     // How this works is for each User in the Users array, the Parent (a singular User) is passed into the posts/comments resolvers 
