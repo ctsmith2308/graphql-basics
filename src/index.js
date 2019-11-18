@@ -71,7 +71,9 @@ const comments = [
     post: '2'
   }
 ];
-// Scalar types for GraphQL - String, Boolean, Int, Float, ID
+
+// SCALAR TYPES for GraphQL 
+// String, Boolean, Int, Float, ID
 // These are used to define the types of each value within your data structures.
 // "!" means a non-nullable type (this can be optional). For a return type you have specified within a Query or Mutation method it must have the key and their specified types!!!
 // Ex:
@@ -100,9 +102,15 @@ const typeDefs = `
   }
 
   type Mutation { 
-    createUser(name: String!, email: String!, age: Int): User!
+    createUser(data: CreateUserInput): User!
     createPost(title: String!, body: String!, published: Boolean!, author: ID!): Post!
     createComment(text: String!, post: ID!, author: ID!): Comment!
+  }
+
+  input CreateUserInput {
+    name: String!
+    email: String!
+    age: Int
   }
 
   type User {
@@ -173,13 +181,13 @@ const resolvers = {
   Mutation: {
     // The args here must have an email and name to be valid. They have a specified type defined above within the function parameters (line 102)
     createUser(parent, args, ctx, info) {
-      const emailTaken = users.some((user) => user.email === args.email)
+      const emailTaken = users.some((user) => user.email === args.data.email)
       if (emailTaken) {
         throw new Error("Email taken")
       }
       const user = {
         id: uuidv4(),
-        ...args
+        ...args.data
       }
       users.push(user);
 
