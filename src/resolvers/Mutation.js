@@ -69,51 +69,96 @@ const Mutation = {
 
     return user;
   },
-  createPost(parent, args, { db }, info) {
+  createPost(parent, args, { db, pubsub }, info) {
     const userExists = db.users.some((user) => user.id === args.data.author)
     if (!userExists) {
       throw new Error("User does not exist")
     }
+
     const post = {
       id: uuidv4(),
       ...args.data
     }
     db.posts.push(post);
+
+    if (args.data.published) {
+      pubsub.publish('post', {
+        post: {
+          mutation: 'CREATED',
+          data: post
+        }
+      })
+    }
+
     return post
   },
-  deletePost(parent, args, { db }, info) {
+  deletePost(parent, args, { db, pubsub }, info) {
     const postIdx = db.posts.findIndex(post => post.id === args.id)
     if (postIdx === -1) throw new Error('Post not found')
 
-    const deletedPost = db.posts.splice(postIdx, 1);
+    const [post] = db.posts.splice(postIdx, 1);
 
     db.comments = db.comments.filter(comment => comment.post !== args.id);
 
-    return deletedPost[0];
+    if (post.published) {
+      pubsub.publish('post', {
+        post: {
+          mutation: 'DELETED',
+          data: post
+        }
+      })
+    }
+
+    return post;
   },
-  updatePost(parent, { id, data }, { db }, info) {
+  updatePost(parent, { id, data }, { db, pubsub }, info) {
     const post = db.posts.find(post => post.id === id);
-    if (!post) throw new Error('Post not found')
+    const originalPost = { ...post };
+    let updated = false;
+
+    if (!post) throw new Error('Post not found');
 
     if (typeof data.title === 'string') {
-      post.title = data.title
+      post.title = data.title;
+      updated = true;
     }
 
     if (typeof data.body === 'string') {
-      post.body = data.body
+      post.body = data.body;
+      updated = true;
     }
 
     if (typeof data.published === 'boolean') {
       post.published = data.published
+      // post is not really "deleted". It simulates a deleted action as only published === true
+      // posts are potentially rendered on the client.
+      // NOTE: This should potentially be handled on the client not the server, so the client could handle ALL posts 
+      if (originalPost.published && !post.published) {
+        pubsub.publish('post', {
+          post: {
+            mutation: 'DELETED',
+            data: originalPost
+          }
+        });
+        // post is really not "created". It simulates a created action as published
+        // posts are only rendered ("created") on the client.
+        // NOTE: This should potentially be handled on the client not the server, so the client could handle ALL posts 
+      } else if (!originalPost.published && post.published) {
+        pubsub.publish('post', {
+          post: {
+            mutation: 'CREATED',
+            data: post
+          }
+        });
+      } else if (updated) {
+        pubsub.publish('post', {
+          post: {
+            mutation: 'UPDATED',
+            data: post
+          }
+        });
+      }
     }
-
-    // Not sure if you would want to change the author id when updating the post
-    // if (typeof data.author === 'string') {
-    //   const authorExists = db.users.some(user => user.id === data.author)
-    //   if (!authorExists) throw new Error('Author does not exist')
-
-    //   post.author = data.author
-    // }
 
     return post;
   },
@@ -133,6 +178,7 @@ const Mutation = {
       ...args.data
     }
     db.comments.push(comment);
+
     pubsub.publish(`comment ${args.data.post}`, { comment })
 
     return comment;
