@@ -31,7 +31,6 @@ let posts = [
     body: "Body of the post this",
     published: true,
     author: '1',
-    comments: [11]
   },
   {
     id: "2",
@@ -39,7 +38,6 @@ let posts = [
     body: "Body of the post that",
     published: false,
     author: '1',
-    comments: [13]
   },
   {
     id: "3",
@@ -47,7 +45,6 @@ let posts = [
     body: "Body of the post what",
     published: true,
     author: '2',
-    comments: [12]
   }
 ];
 
@@ -115,6 +112,7 @@ const typeDefs = `
     createPost(data: CreatePostInput): Post!
     deletePost(id: ID!): Post!
     createComment(data: CreateCommentInput): Comment!
+    deleteComment(id: ID!): Comment!
   }
 
   input CreateUserInput {
@@ -277,6 +275,14 @@ const resolvers = {
 
       return comment;
     },
+    deleteComment(parent, args, ctx, info) {
+      const commentIdx = comments.findIndex(comment => comment.id === args.id);
+      if (commentIdx === -1) throw new Error('Comment not found')
+
+      const deletedComment = comments.splice(commentIdx, 1);
+
+      return deletedComment[0];
+    }
   },
   Post: { // In order to access the authors or comments from a query WITHIN a post query, resolver functions for each TYPE (author and comment) are needed below:
     // Note: Parent, from what I'm loosely assuming is equal to a single Post, specifically the Post within Posts above.
