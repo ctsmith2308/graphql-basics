@@ -113,6 +113,7 @@ const typeDefs = `
     createUser(data: CreateUserInput): User!
     deleteUser(id: ID!): User!
     createPost(data: CreatePostInput): Post!
+    deletePost(id: ID!): Post!
     createComment(data: CreateCommentInput): Comment!
   }
 
@@ -217,22 +218,21 @@ const resolvers = {
     },
     deleteUser(parent, args, ctx, info) {
       let userIndex = users.findIndex(user => user.id === args.id);
-      console.log('user Idx', userIndex)
       if (userIndex === -1) {
         throw new Error('User not found')
       }
 
       let deletedUser = users.splice(userIndex, 1);
 
-      // posts = posts.filter(post => {
-      //   const match = post.author === args.id
-      //   if (match) {
-      //     comments = comments.filter(comment => comment.post !== post.id)
-      //   }
+      posts = posts.filter(post => {
+        const match = post.author === args.id
+        if (match) {
+          comments = comments.filter(comment => comment.post !== post.id)
+        }
 
-      //   return !match
-      // });
-      // comments = comments.filter(comment => comment.author !== args.id)
+        return !match
+      });
+      comments = comments.filter(comment => comment.author !== args.id)
 
       return deletedUser[0];
     },
@@ -247,6 +247,16 @@ const resolvers = {
       }
       posts.push(post);
       return post
+    },
+    deletePost(parent, args, ctx, info) {
+      const postIdx = posts.findIndex(post => post.id === args.id)
+      if (postIdx === -1) throw new Error('Post not found')
+
+      const deletedPost = posts.splice(postIdx, 1);
+
+      comments = comments.filter(comment => comment.post !== args.id);
+
+      return deletedPost[0];
     },
     createComment(parent, args, ctx, info) {
       const postExists = posts.some(post => post.id === args.data.post && post.published);
