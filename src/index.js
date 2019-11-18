@@ -1,6 +1,7 @@
 import { GraphQLServer } from "graphql-yoga";
-import uuidv4 from 'uuid/v4'; // npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
+// npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
 // Used to generate random id for posts, comment, and id's in this example.  
+import uuidv4 from 'uuid/v4'; 
 import db from "./db";
 
 // RESOLVERS
