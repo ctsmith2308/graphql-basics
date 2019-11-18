@@ -1,5 +1,6 @@
 import { GraphQLServer } from "graphql-yoga";
 import uuidv4 from 'uuid/v4'; // npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
+import { transformSchema } from "graphql-tools";
 // Used to generate random id for posts, comment, and id's in this example.  
 
 // DEMO DATA
@@ -92,6 +93,13 @@ const comments = [
 // defined below - User, Post, Comment.
 
 // MUTATIONS (Mutation) emulate 'put', 'post', 'delete' requests. They are similar to Queries, but they need paramters passed in (not optional).
+
+// NOTE: Mutations can have an input type as well, since there can be multiple inputs for mutation. I've defined the input type
+// with a 'data' object for each mutation. You will have to access the data object via args.data within each mutation method
+// , but you can name it anything within the parameters field of the actual mutation. 
+// Be sure the names are the same when accessing them!!! If `createUser(data: CreateUserInput): User!` then `args.data`,
+// if createUser(whatever: CreateUserInput): User!, then args.whatever 
+// see below for additional examples.
 
 // TYPE DEFINITIONS (schema)
 const typeDefs = `
@@ -192,7 +200,7 @@ const resolvers = {
     }
   },
   Mutation: {
-    // The args here must have an email and name to be valid. They have a specified type defined above within the function parameters (line 102)
+    // The args here must have an email and name to be valid. They have a specified type defined above within the function parameters.
     createUser(parent, args, ctx, info) {
       const emailTaken = users.some((user) => user.email === args.data.email)
       if (emailTaken) {
