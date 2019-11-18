@@ -83,7 +83,6 @@ input CreatePostInput {
   author: ID!
 }
 
-
 input CreateCommentInput {
   text: String!
   post: ID!
