@@ -1,6 +1,7 @@
 // npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
 // Used to generate random id for posts, comment, and id's in this example.  
 import uuidv4 from 'uuid/v4';
+import { cpus } from 'os';
 
 const Mutation = {
   // The args here must have an email and name to be valid. They have a specified type defined within the type definitions.
@@ -90,6 +91,32 @@ const Mutation = {
 
     return deletedPost[0];
   },
+  updatePost(parent, { id, data }, { db }, info) {
+    const post = db.posts.find(post => post.id === id);
+    if (!post) throw new Error('Post not found')
+
+    if (typeof data.title === 'string') {
+      post.title = data.title
+    }
+
+    if (typeof data.body === 'string') {
+      post.body = data.body
+    }
+
+    if (typeof data.published === 'boolean') {
+      post.published = data.published
+    }
+
+    // Not sure if you would want to change the author id when updating the post
+    // if (typeof data.author === 'string') {
+    //   const authorExists = db.users.some(user => user.id === data.author)
+    //   if (!authorExists) throw new Error('Author does not exist')
+
+    //   post.author = data.author
+    // }
+
+    return post;
+  },
   createComment(parent, args, { db }, info) {
     const postExists = db.posts.some(post => post.id === args.data.post && post.published);
     if (!postExists) {
@@ -116,6 +143,16 @@ const Mutation = {
     const deletedComment = db.comments.splice(commentIdx, 1);
 
     return deletedComment[0];
+  },
+  updateComment(parent, { id, data }, { db }, info) {
+    const comment = db.comments.find(comment => comment.id === id);
+    if (!comment) throw new Error('Comment not found');
+
+    if (typeof data.text === 'string') {
+      comment.text = data.text
+    }
+
+    return comment;
   }
 }
 
