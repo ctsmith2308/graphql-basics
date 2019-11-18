@@ -2,32 +2,51 @@
 
 # SCALAR TYPES for GraphQL
 # String, Boolean, Int, Float, ID
+# These are used to define the types of each value within your type defs.
 
-# These are used to define the types of each value within your data structures.
-# "!" means a non-nullable type (this can be optional). For a return type you have specified within a Query or Mutation method it must have the key and their specified types!!!
+# "!" below, after the scalar types, means a non-nullable type (optional). For a return type you have specified within a Query or Mutation method 
+# it must have the key and a specified types - either scalar or custom defined (see below).
+
+# Ex: 
+#  users(query: String!): [User!]! <-- return type is an array of Users (custom defined type) and is non-nullable(!).
+#  users: String! <-- return type is a single scalar type of String and is non-nullable(!) 
+
 # Ex:
 # type User {
 #  id: ID! <-- type of id
 #  name: String! <-- type of name
 #  email: String! <-- type of email
 #  age: ID <-- type of age, and so forth
-#  posts: [Post!]!
+#  posts: [Post!]! <-- type is an array of Posts that is non-nullable
 #  comments: [Comment!]!
 # }
 
-# QUERIES (Query) emulate 'get' requests and have optional query parameters that are passed to resolver methods (see below in Resolvers) to execute desired functionality.
-# These 'get' requests are methods that can take on a parameter or not Ex: users(query: String!): [User!]! or query: [User!]! (see below for reference)
-# The return type is specied after the ':' This is a non-nullable return type meaning the methods you DEFINE must return a type
-# defined below - User, Post, Comment.
+# QUERIES: 
+# A Query method emulates 'get' requests and have optional query parameters that are passed to resolver methods to execute desired functionality.
+# These 'get' request methods can also have optional nullable or non-nullable parameter types. 
 
-# MUTATIONS (Mutation) emulate 'put', 'post', 'delete' requests. They are similar to Queries, but they need paramters passed in (not optional).
+# Ex: users(query: String!): [User!]! or users: [User!]! 
 
-# NOTE: Mutations can have an input type as well, since there can be multiple inputs for mutation. I've defined the input type
-# with a 'data' object for each mutation. You will have to access the data object via args.data within each mutation method
-# but you can name it anything within the parameters field of the actual mutation. 
-# Be sure the names are the same when accessing them!!! If `createUser(data: CreateUserInput): User!` then `args.data`,
-# if createUser(whatever: CreateUserInput): User!, then args.whatever 
-# see below for additional examples.
+# The return type is specied after the ':' above. Since this is a non-nullable return type distinguished by the "!", 
+# the methods you DEFINE must return one of the types defined below (User, Post, Comment).
+
+# MUTATIONS: 
+# A Mutation method emulates 'put', 'post', and 'delete' requests. They are similar to Query methods, but they require paramters (not optional).
+
+# NOTE: Mutations can have a defined input type, since there can be multiple inputs for an actual mutation request, which can get unweildly. 
+# I've defined the `input` type for each mutation method parameter. (CreateUserInput, UpdateUserInput, CreatePostInput)
+# Within the method parameter assign a key with a name of your choosing, and assign the value to an `input` type you defined.
+# You will have to access the name of the key to reference the `input` type you assigned to the key. 
+
+# Be sure the names are the same when accessing them (see below).
+
+# Ex:
+#   If `createUser(data: CreateUserInput): User!` then `args.data` within the method itself.
+#     the parameter `data` must be of CreateUserInput type, defined below. (data object passed into actual query requries a name, email, and age).
+#   If `createPost(whatever: CreatePostInput): User!`, then `args.whatever` within the method itself.
+#     the parameter `whatever` must be of CreatePostInput type defined below (data object passed into actual query requries a title, body, published, and author).
+
+# SEE TYPE DEFINITIONS BELOW!!!
 
 type Query {
   users(query: String): [User!]!
@@ -38,6 +57,7 @@ type Query {
 type Mutation { 
   createUser(data: CreateUserInput): User!
   deleteUser(id: ID!): User!
+  updateUser(id: ID!, data: UpdateUserInput!): User!
   createPost(data: CreatePostInput): Post!
   deletePost(id: ID!): Post!
   createComment(data: CreateCommentInput): Comment!
@@ -50,12 +70,19 @@ input CreateUserInput {
   age: Int
 }
 
+input UpdateUserInput {
+  name: String
+  email: String
+  age: Int
+}
+
 input CreatePostInput {
   title: String! 
   body: String!
   published: Boolean!
   author: ID!
 }
+
 
 input CreateCommentInput {
   text: String!
