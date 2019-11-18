@@ -1,199 +1,43 @@
 import { GraphQLServer } from "graphql-yoga";
 import uuidv4 from 'uuid/v4'; // npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
 // Used to generate random id for posts, comment, and id's in this example.  
-
-// DEMO DATA
-let users = [
-  {
-    id: "1",
-    name: "Chris",
-    email: "some@yahoo.com",
-    age: 32
-  },
-  {
-    id: "2",
-    name: "Sara",
-    email: "some@yahoo.com",
-    age: 32
-  },
-  {
-    id: "3",
-    name: "Rachel",
-    email: "some@yahoo.com",
-    age: 32
-  }
-];
-
-let posts = [
-  {
-    id: "1",
-    title: "What title",
-    body: "Body of the post this",
-    published: true,
-    author: '1',
-  },
-  {
-    id: "2",
-    title: "This title",
-    body: "Body of the post that",
-    published: false,
-    author: '1',
-  },
-  {
-    id: "3",
-    title: "No titles",
-    body: "Body of the post what",
-    published: true,
-    author: '2',
-  }
-];
-
-let comments = [
-  {
-    id: "11",
-    text: "Chris is great",
-    author: '1',
-    post: '1'
-  },
-  {
-    id: "12",
-    text: "Sara is awesome",
-    author: '2',
-    post: '3'
-  },
-  {
-    id: "13",
-    text: "Rachel is annoying",
-    author: '3',
-    post: '2'
-  }
-];
-
-// SCALAR TYPES for GraphQL 
-// String, Boolean, Int, Float, ID
-
-// These are used to define the types of each value within your data structures.
-// "!" means a non-nullable type (this can be optional). For a return type you have specified within a Query or Mutation method it must have the key and their specified types!!!
-// Ex:
-// type User {
-//   id: ID! <-- type of id
-//   name: String! <-- type of name
-//   email: String! <-- type of email
-//   age: ID <-- type of age, and so forth
-//   posts: [Post!]!
-//   comments: [Comment!]!
-// }
-
-// QUERIES (Query) emulate 'get' requests and have optional query parameters that are passed to resolver methods (see below in Resolvers) to execute desired functionality.
-// These 'get' requests are methods that can take on a parameter or not Ex: users(query: String!): [User!]! or query: [User!]! (see below for reference)
-// The return type is specied after the ':' This is a non-nullable return type meaning the methods you DEFINE must return a type
-// defined below - User, Post, Comment.
-
-// MUTATIONS (Mutation) emulate 'put', 'post', 'delete' requests. They are similar to Queries, but they need paramters passed in (not optional).
-
-// NOTE: Mutations can have an input type as well, since there can be multiple inputs for mutation. I've defined the input type
-// with a 'data' object for each mutation. You will have to access the data object via args.data within each mutation method
-// , but you can name it anything within the parameters field of the actual mutation. 
-// Be sure the names are the same when accessing them!!! If `createUser(data: CreateUserInput): User!` then `args.data`,
-// if createUser(whatever: CreateUserInput): User!, then args.whatever 
-// see below for additional examples.
-
-// TYPE DEFINITIONS (schema)
-const typeDefs = `
-  type Query {
-    users(query: String): [User!]!
-    posts(query: String): [Post!]!
-    comments(query: String): [Comment!]!
-  }
-
-  type Mutation { 
-    createUser(data: CreateUserInput): User!
-    deleteUser(id: ID!): User!
-    createPost(data: CreatePostInput): Post!
-    deletePost(id: ID!): Post!
-    createComment(data: CreateCommentInput): Comment!
-    deleteComment(id: ID!): Comment!
-  }
-
-  input CreateUserInput {
-    name: String!
-    email: String!
-    age: Int
-  }
-
-  input CreatePostInput {
-    title: String! 
-    body: String!
-    published: Boolean!
-    author: ID!
-  }
-
-  input CreateCommentInput {
-    text: String!
-    post: ID!
-    author: ID!
-  }
-
-  type User {
-    id: ID!
-    name: String!
-    email: String!
-    age: ID
-    posts: [Post!]!
-    comments: [Comment!]!
-  }
-
-  type Post {
-    id: ID!
-    title: String!
-    body: String!
-    published: Boolean!
-    author: User!
-    comments: [Comment!]!
-  }
-
-  type Comment {
-    id: ID!
-    text: String!
-    author: User!
-    post: Post!
-  }
-`;
+import db from "./db";
 
 // RESOLVERS
 // You must define a corresponding resolver method for each Query or Mutation method you create. 
 const resolvers = {
   Query: {
     // args are the parameters you pass in to the defined methods within a Mutation or Query.
-    // More to come for ctx and info
-    posts(parent, args, ctx, info) {
+    // since ctx (context) has been added as a key to the new GraphQL server (see bottom of file)
+    // the ctx parameter has access to the db key/values via ctx.db.users || ctx.db.posts || ctx.db.comments 
+    posts(parent, args, { db }, info) { // (parent, args, { db }, info) is destructured from (parent, args, ctx, info)
       // The args here must be type String and since it is optional shit wont break. The string can be anything.
       if (!args.query) {
-        return posts;
+        return db.posts;
       } else {
         // Since the return type of posts must be an array of posts (ie [Posts!]! - again, not nullable) we are returning the array of posts.
-        return posts.filter(
+        return db.posts.filter(
           post =>
-            post.title.toLowerCase().indexOf(args.query.toLowerCase()) !== -1 ||
-            post.body.toLowerCase().indexOf(args.query.toLowerCase()) !== -1
+            db.post.title.toLowerCase().indexOf(args.query.toLowerCase()) !== -1 ||
+            db.post.body.toLowerCase().indexOf(args.query.toLowerCase()) !== -1
         );
       }
     },
-    users(parent, args, ctx, info) {
+    users(parent, args, { db }, info) {
       if (!args.query) {
-        return users;
+        return db.users;
       } else {
-        return users.filter(
+        return db.users.filter(
           user =>
             user.name.toLowerCase().indexOf(args.query.toLowerCase()) !== -1
         );
       }
     },
-    comments(parent, args, ctx, info) {
+    comments(parent, args, { db }, info) {
       if (!args.query) {
-        return comments
+        return db.comments
       } else {
-        return comments.filter(comment =>
+        return db.comments.filter(comment =>
           comment.text.toLowerCase().indexOf(args.query.toLowerCase()) !== -1 ||
           comment.id === args.query)
       }
@@ -201,8 +45,8 @@ const resolvers = {
   },
   Mutation: {
     // The args here must have an email and name to be valid. They have a specified type defined above within the function parameters.
-    createUser(parent, args, ctx, info) {
-      const emailTaken = users.some((user) => user.email === args.data.email)
+    createUser(parent, args, { db }, info) {
+      const emailTaken = db.users.some((user) => user.email === args.data.email)
       if (emailTaken) {
         throw new Error("Email taken")
       }
@@ -210,32 +54,32 @@ const resolvers = {
         id: uuidv4(),
         ...args.data
       }
-      users.push(user);
+      db.users.push(user);
 
       return user;
     },
-    deleteUser(parent, args, ctx, info) {
-      let userIndex = users.findIndex(user => user.id === args.id);
+    deleteUser(parent, args, { db }, info) {
+      let userIndex = db.users.findIndex(user => user.id === args.id);
       if (userIndex === -1) {
         throw new Error('User not found')
       }
 
-      let deletedUser = users.splice(userIndex, 1);
+      let deletedUser = db.users.splice(userIndex, 1);
 
-      posts = posts.filter(post => {
+      db.posts = db.posts.filter(post => {
         const match = post.author === args.id
         if (match) {
-          comments = comments.filter(comment => comment.post !== post.id)
+          db.comments = db.comments.filter(comment => comment.post !== post.id)
         }
 
         return !match
       });
-      comments = comments.filter(comment => comment.author !== args.id)
+      db.comments = db.comments.filter(comment => comment.author !== args.id)
 
       return deletedUser[0];
     },
-    createPost(parent, args, ctx, info) {
-      const userExists = users.some((user) => user.id === args.data.author)
+    createPost(parent, args, { db }, info) {
+      const userExists = db.users.some((user) => user.id === args.data.author)
       if (!userExists) {
         throw new Error("User does not exist")
       }
@@ -243,26 +87,26 @@ const resolvers = {
         id: uuidv4(),
         ...args.data
       }
-      posts.push(post);
+      db.posts.push(post);
       return post
     },
-    deletePost(parent, args, ctx, info) {
-      const postIdx = posts.findIndex(post => post.id === args.id)
+    deletePost(parent, args, { db }, info) {
+      const postIdx = db.posts.findIndex(post => post.id === args.id)
       if (postIdx === -1) throw new Error('Post not found')
 
-      const deletedPost = posts.splice(postIdx, 1);
+      const deletedPost = db.posts.splice(postIdx, 1);
 
-      comments = comments.filter(comment => comment.post !== args.id);
+      db.comments = db.comments.filter(comment => comment.post !== args.id);
 
       return deletedPost[0];
     },
-    createComment(parent, args, ctx, info) {
-      const postExists = posts.some(post => post.id === args.data.post && post.published);
+    createComment(parent, args, { db }, info) {
+      const postExists = db.posts.some(post => post.id === args.data.post && post.published);
       if (!postExists) {
         throw new Error("Post does not exist")
       }
 
-      const userExists = users.some(user => user.id === args.data.author);
+      const userExists = db.users.some(user => user.id === args.data.author);
       if (!userExists) {
         throw new Error("User does not exist");
       }
@@ -271,15 +115,15 @@ const resolvers = {
         id: uuidv4(),
         ...args.data
       }
-      comments.push(comment);
+      db.comments.push(comment);
 
       return comment;
     },
-    deleteComment(parent, args, ctx, info) {
-      const commentIdx = comments.findIndex(comment => comment.id === args.id);
+    deleteComment(parent, args, { db }, info) {
+      const commentIdx = db.comments.findIndex(comment => comment.id === args.id);
       if (commentIdx === -1) throw new Error('Comment not found')
 
-      const deletedComment = comments.splice(commentIdx, 1);
+      const deletedComment = db.comments.splice(commentIdx, 1);
 
       return deletedComment[0];
     }
@@ -289,11 +133,11 @@ const resolvers = {
     // How this works is for each Post in the Posts array, the Parent (a singular Post) is passed into the author/comments resolvers 
     // below which allows the author/comments resolver functions to access the values of each Post (the parent). 
     // It is a built in GraphQL loop that queries each Post ie Parent against the find function within the resolver below
-    author(parent, args, ctx, info) {
-      return users.find((user) => user.id === parent.author)
+    author(parent, args, { db }, info) {
+      return db.users.find((user) => user.id === parent.author)
     },
-    comments(parent, args, ctx, info) {
-      return comments.filter(comment => comment.post === parent.id)
+    comments(parent, args, { db }, info) {
+      return db.comments.filter(comment => comment.post === parent.id)
     }
   },
   User: { // In order to access the comments or posts from a query WITHIN a user query, resolver functions for each TYPE (comments and post) are needed below:
@@ -301,11 +145,11 @@ const resolvers = {
     // How this works is for each User in the Users array, the Parent (a singular User) is passed into the posts/comments resolvers 
     // below, which allows the posts/comments resolver functions to access the values of each User (the parent). 
     // It is a built in GraphQL loop that queries each User ie Parent against the find function within the resolver below
-    posts(parent, args, ctx, info) {
-      return posts.filter(post => post.author === parent.id)
+    posts(parent, args, { db }, info) {
+      return db.posts.filter(post => post.author === parent.id)
     },
-    comments(parent, args, ctx, info) {
-      return comments.filter(comment => comment.author === parent.id)
+    comments(parent, args, { db }, info) {
+      return db.comments.filter(comment => comment.author === parent.id)
     }
   },
   Comment: { // In order to access the authors or posts from a query WITHIN a comment query, resolver functions for each TYPE (author and post) are needed below:
@@ -313,18 +157,28 @@ const resolvers = {
     // How this works is for each comment in the comments array, the Parent (a singular Comment) is passed into the author/posts resolvers 
     // below, which allows the author/posts resolver functions to access the values of each Comment (the parent). 
     // It is a built in GraphQL loop that queries each Comment ie Parent against the find function within the resolver below
-    author(parent, args, ctx, info) {
-      return users.find((user) => user.id === parent.author)
+    author(parent, args, { db }, info) {
+      return db.users.find((user) => user.id === parent.author)
     },
-    post(parent, args, ctx, info) {
-      return posts.find(post => post.id === parent.post)
+    post(parent, args, { db }, info) {
+      return db.posts.find(post => post.id === parent.post)
     }
   }
 };
-// intialize new GraphQLServer and pass in typeDefs and resolvers defined above.
+
+// Intialize new GraphQLServer and pass in typeDefs and resolvers defined above.
+// typedefs ar imported in terms of the root regardless if the typdefs are defined in the same directory
+// Ex: typeDefs: './src/schema.graphql',
+// context key allows access to db keys/values upon import at the top of the file. 
+// Once a context is established, each resolver method has access to the context or ctx
+// Ex: createComment(parent, args, ctx, info) <-- ctx has access to db via ctx.db.users (imported above)
+
 const server = new GraphQLServer({
-  typeDefs,
-  resolvers
+  typeDefs: './src/schema.graphql',
+  resolvers,
+  context: {
+    db
+  }
 });
 
 server.start(() => {
