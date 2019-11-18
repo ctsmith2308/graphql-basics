@@ -13,7 +13,7 @@ const Mutation = {
   //     name
   //   }
   // }
-  
+
   createUser(parent, args, { db }, info) {
     const emailTaken = db.users.some((user) => user.email === args.data.email)
     if (emailTaken) {
@@ -46,6 +46,9 @@ const Mutation = {
     db.comments = db.comments.filter(comment => comment.author !== args.id)
 
     return deletedUser[0];
+  },
+  updateUser(parent, args, { db }, info) {
+    return null;
   },
   createPost(parent, args, { db }, info) {
     const userExists = db.users.some((user) => user.id === args.data.author)
