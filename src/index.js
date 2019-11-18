@@ -104,7 +104,7 @@ const typeDefs = `
   type Mutation { 
     createUser(data: CreateUserInput): User!
     createPost(data: CreatePostInput): Post!
-    createComment(text: String!, post: ID!, author: ID!): Comment!
+    createComment(data: CreateCommentInput): Comment!
   }
 
   input CreateUserInput {
@@ -117,6 +117,12 @@ const typeDefs = `
     title: String! 
     body: String!
     published: Boolean!
+    author: ID!
+  }
+
+  input CreateCommentInput {
+    text: String!
+    post: ID!
     author: ID!
   }
 
@@ -213,19 +219,19 @@ const resolvers = {
       return post
     },
     createComment(parent, args, ctx, info) {
-      const postExists = posts.some(post => post.id === args.post && post.published);
+      const postExists = posts.some(post => post.id === args.data.post && post.published);
       if (!postExists) {
         throw new Error("Post does not exist")
       }
 
-      const userExists = users.some(user => user.id === args.author);
+      const userExists = users.some(user => user.id === args.data.author);
       if (!userExists) {
         throw new Error("User does not exist");
       }
 
       let comment = {
         id: uuidv4(),
-        ...args
+        ...args.data
       }
       comments.push(comment);
 
