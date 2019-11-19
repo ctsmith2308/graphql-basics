@@ -139,14 +139,20 @@ type Comment {
   post: Post!
 }
 
+enum MutationType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
 # The types defined below are payloads returned from the actual requests. They are provided to the subscription type above.
 # I am defining mutation to describe what mutation event happened("CREATED", "UPDATED", "DELTED" etc...)
 type PostSubscriptionPayload {
-  mutation: String!
+  mutation: MutationType!
   data: Post!
 }
 
 type CommentSubscriptionPayload {
-  mutation: String!
+  mutation: MutationType!
   data: Comment!
 }
