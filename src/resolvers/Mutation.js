@@ -1,7 +1,6 @@
 // npm module that returns random id - call uuid4() which will return something like: "6fa1436d-bea7-461a-8449-d3b7285ff496". 
 // Used to generate random id for posts, comment, and id's in this example.  
 import uuidv4 from 'uuid/v4';
-import { cpus } from 'os';
 
 const Mutation = {
   // The args here must have an email and name to be valid. They have a specified type defined within the type definitions.
@@ -176,28 +175,47 @@ const Mutation = {
     let comment = {
       id: uuidv4(),
       ...args.data
-    }
+    };
     db.comments.push(comment);
 
-    pubsub.publish(`comment ${args.data.post}`, { comment })
+    pubsub.publish(`comment ${args.data.post}`, {
+      comment: {
+        mutation: 'CREATED',
+        data: comment
+      }
+    });
 
     return comment;
   },
-  deleteComment(parent, args, { db }, info) {
+  deleteComment(parent, args, { db, pubsub }, info) {
     const commentIdx = db.comments.findIndex(comment => comment.id === args.id);
     if (commentIdx === -1) throw new Error('Comment not found')
 
-    const deletedComment = db.comments.splice(commentIdx, 1);
+    const [deletedComment] = db.comments.splice(commentIdx, 1);
 
-    return deletedComment[0];
+    pubsub.publish(`comment ${deletedComment.post}`, {
+      comment: {
+        mutation: 'DELETED',
+        data: deletedComment
+      }
+    });
+
+    return deletedComment;
   },
-  updateComment(parent, { id, data }, { db }, info) {
+  updateComment(parent, { id, data }, { db, pubsub }, info) {
     const comment = db.comments.find(comment => comment.id === id);
     if (!comment) throw new Error('Comment not found');
 
     if (typeof data.text === 'string') {
       comment.text = data.text
     }
+
+    pubsub.publish(`comment ${comment.post}`, {
+      comment: {
+        mutation: 'UPDATED',
+        data: comment
+      }
+    });
 
     return comment;
   }

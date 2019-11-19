@@ -68,8 +68,13 @@ type Mutation {
   updateComment(id: ID!, data: UpdateCommentInput!): Comment!
 }
 
+# The Subscription type is a way to define what data and its structure is returned when a subscription is "subscribed" to a publish method call made in a mutation method.
+# It is a means to listen in on what data has been changed/altered via a pub-sub structure instead of manually making recurring API requests.
+
 type Subscription {
-  comment(postId: ID!): Comment!
+  comment(postId: ID!): CommentSubscriptionPayload!
+  # Definining the payload structure below.
+  # comment: CommentSubscriptionPayload! 
   post: PostSubscriptionPayload!
 }
 
@@ -134,7 +139,14 @@ type Comment {
   post: Post!
 }
 
+# The types defined below are payloads returned from the actual requests. They are provided to the subscription type above.
+# I am defining mutation to describe what mutation event happened("CREATED", "UPDATED", "DELTED" etc...)
 type PostSubscriptionPayload {
   mutation: String!
   data: Post!
+}
+
+type CommentSubscriptionPayload {
+  mutation: String!
+  data: Comment!
 }
