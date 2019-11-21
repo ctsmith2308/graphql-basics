@@ -32,17 +32,14 @@ import Comment from "./resolvers/Comment";
 //   do something...
 // }
 
-// Intialize new GraphQLServer and pass in typeDefs and resolvers defined above.
-// typedefs ar imported in terms of the root regardless if the typdefs are defined in the same directory
-// Ex: typeDefs: './src/schema.graphql',
-// context key allows access to db keys/values upon import at the top of the file. 
-// Once a context is established, each resolver method has access to the context or `ctx` parameter within the method body.
-// createComment(parent, args, ctx, info) <-- ctx has access to db via `ctx.db.users` (imported above)
-// NOTE: resolver methods now have access to the ctx.db object that contains users, posts, and comments arrays.
+// Intialize new GraphQLServer and pass in typeDefs resolvers, and context.
+
+// new Pubsub is needed to establish pub sub relationship in subscriber methods to listen in on changes/mutations
+// pubsub is then passed into context so that subscriber methods have access to the ctx.pubsub value.
 const pubsub = new PubSub();
 
 const server = new GraphQLServer({
-  typeDefs: './src/schema.graphql',
+  typeDefs: './src/schema.graphql', // typedefs are imported in terms of the root regardless if the typdefs are defined in the same directory
   resolvers: {
     Query,
     Mutation,
@@ -51,7 +48,10 @@ const server = new GraphQLServer({
     Post,
     Comment
   },
-  context: {
+  // Once a context is established, each resolver method has access to the context or `ctx` parameter within the method body.
+  // createComment(parent, args, ctx, info) <-- ctx has access to db via `ctx.db.users` (imported above)
+  // NOTE: resolver methods now have access to the ctx.db object that contains users, posts, and comments arrays.
+  context: { // context key allows access to db keys/values upon import at the top of the file. 
     db,
     pubsub
   }
